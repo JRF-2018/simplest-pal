@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.1' # Time-stamp: <2025-06-13T07:59:25Z>
+__version__ = '0.0.1' # Time-stamp: <2025-06-13T08:38:02Z>
 
 import sys
 import threading
@@ -204,6 +204,11 @@ def simplest_pal_main():
     pdb_auto._print_to_console(f"Simplest P.A.L.: Running target script: '{args.script}'\n")
     sys.argv = [args.script] + remaining_args
     
+    # Add the directory of the target script to sys.path
+    script_dir = os.path.dirname(os.path.abspath(args.script))
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir) # Insert at the beginning to prioritize local modules
+
     script_completed = False
     script_force_quit = False # Set to True if script is explicitly quit
     try:
