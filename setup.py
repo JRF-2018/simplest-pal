@@ -20,7 +20,8 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url="https://github.com/JRF-2018/simplest-pal", 
-    packages=setuptools.find_packages(),
+    py_modules=['simplest_pal']
+    # packages=setuptools.find_packages(),
 
     entry_points={
         'console_scripts': [
