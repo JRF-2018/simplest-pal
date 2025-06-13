@@ -1,0 +1,366 @@
+# simplest-pal: The Simplest PDB Automation Layer for AI-Driven Debugging
+
+`simplest-pal` is the simplest implementation of an "AI" when wrapping PDB (Python Debugger) with an AI. This is a concept implementation, primarily intended to be used in conjunction with [JRF-2018/jrf\_pdb\_agent\_lib](https://github.com/JRF-2018/jrf_pdb_agent_lib).
+
+## Overview
+
+`simplest-pal` is a CLI tool that automates the PDB debugger during Python script execution, allowing for AI agent or human intervention under specific conditions.
+
+  * `pal.do()`: Typically continues the PDB session (sends the `c` command). If `current_code` is `None` or PDB enters an input-waiting state, it transfers control to the debugger.
+
+  * `pal.consult_human()`: Transfers control to the debugger when human intervention is required.
+
+In principle, we'd want to hook the `c` (continue) command to return control to `simplest-pal`. However, the current implementation is such that pressing `c` only keeps the debugger screen visible without doing anything, and only when a string returned from `pal.do()` or `pal.consult_human()` appears in the output (after confirming it's ready for input, perhaps with a short wait), will it send commands like `c`.
+
+It also includes functionality to save a complete log of the debugger session.
+
+## Features
+
+  * **AI-Wrapped Debugger**: Provides a simple automation layer on top of PDB, enabling an AI agent to interact with the debugging process.
+
+  * **Concept Implementation**: A proof-of-concept to demonstrate the basic workflow of AI-driven debugging.
+
+  * **Integration with JRF-2018/jrf\_pdb\_agent\_lib**: Designed to work in conjunction with `jrf_pdb_agent_lib`, but can also support other `pdb_agent_lib` implementations.
+
+  * **Log Storage**: Saves a complete log of the debugger's input and output during the session.
+
+  * **CLI Interface**: Provides a simple command-line interface implemented in Python.
+
+  * **No Security Considerations**: As this is a concept implementation, security is not a primary concern.
+
+## Installation
+
+This project can be installed from the repository.
+
+```bash
+pip install git+https://github.com/JRF-2018/simplest-pal
+```
+
+## Usage
+
+Run `simplest-pal` by specifying the Python script you want to debug.
+
+```bash
+simplest-pal your_script.py [script_args...]
+```
+
+  * `your_script.py`: Path to the Python script to be debugged.
+
+  * `[script_args...]`: Arguments to pass to `your_script.py`.
+
+### Specifying PDB Log File
+
+To specify the log file for the debugger session, use the `--pal-log` option.
+
+```bash
+simplest-pal --pal-log my_debug_session.log your_script.py
+```
+
+The default log file is `pdb_session.log`.
+
+### Automatic Quitting on Debugger Stop
+
+To always `q` (quit) when the debugger stops without being able to `c` (continue), use the `--pal-quit-on-stop` option.
+
+## How It Works
+
+`simplest-pal` intercepts PDB's input and output by hooking `sys.stdin`, `sys.stdout`, and `sys.stderr`.
+
+1.  **Starting a PDB Session**: When the target script calls `pdb.set_trace()`, `simplest-pal` takes control and initiates a PDB session.
+
+2.  **Output Monitoring**: It monitors the output from PDB, detecting specific keywords such as AI interaction points (e.g., "`AI Interaction Point`", "`Current Code Context (for AI reference)`") or human intervention requests (e.g., "`Human Consultation Requested`").
+
+3.  **Auto-Continuation**: When these keywords are detected, `simplest-pal` automatically sends the `c` (continue) command to PDB, resuming script execution.
+
+4.  **Human Intervention**: If PDB is waiting for user input (when the `(Pdb)` prompt is displayed) and auto-continuation conditions are not met, a human can directly enter PDB commands.
+
+5.  **Logging**: All PDB input and output are recorded in the specified log file.
+
+## 使用例
+
+Name the following file `example_1.py` and run it with `simplest-pal`.
+
+```python
+import jrf_pdb_agent_lib as pal
+import textwrap
+
+pal.login()
+
+x = 42
+
+r = pal.do("Do something good.",
+           current_code = textwrap.dedent("""\
+               pal.do('Multiply 2',current_code='x=x*2')
+               pal.do('Minus 1',current_code='x=x-1')
+               pal.RESULT = x
+           """))
+
+print(r)
+```
+
+The output will be as follows.
+
+```bash
+$ simplest-pal example_1.py
+Simplest P.A.L.: Running target script: 'example_1.py'
+PDB Automation: Debugger session activated.
+PDB Agent Lib: Initialized. Shared memory is used for IPC.
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Do something good.'
+Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+PDB Automation: Debugger session activated.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Multiply 2'
+Current Code Context (for AI reference): 'x=x*2'
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+PDB Automation: Debugger session activated.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: 'x=x*2'
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: No result returned from AI.
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Minus 1'
+Current Code Context (for AI reference): 'x=x-1'
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+Simplest P.A.L.: Target script execution completed normally.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: 'x=x-1'
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: No result returned from AI.
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: Returning result from AI.
+83
+
+PDB session log saved to 'pdb_session.log'.
+```
+
+This means that `c` was automatically pressed three times.
+
+## Development
+
+As this project is a concept implementation, bug reports and feature suggestions are highly welcome.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+
+## Author
+
+JRF ( http://jrf.cocolog-nifty.com/statuses , Twitter (X): @jion_rockford )
+
+This project was largely generated by Gemini 2.5 Flash and Pro.
+
+----
+
+# simplest-pal: AI駆動デバッグのための最もシンプルなPDB自動化レイヤー
+
+`simplest-pal`は、PDB（Python Debugger）を「AI」でラップする場合の「AI」の最もシンプルな実装です。これはコンセプトの実装であり、主に[JRF-2018/jrf\_pdb\_agent\_lib](https://github.com/JRF-2018/jrf_pdb_agent_lib)と連携して使用することを想定しています。
+
+## 概要
+
+`simplest-pal`は、Pythonスクリプトの実行中にPDBデバッガを自動化し、特定の条件下でAIエージェントまたは人間による介入を可能にするCLIツールです。
+
+  * `pal.do()`: 通常はPDBセッションを継続（`c`コマンドを送信）します。`current_code`が`None`の場合、またはPDBが入力待ち状態になった場合は、デバッガに制御を移します。
+
+  * `pal.consult_human()`: 人間による介入が必要な場合にデバッガに制御を移します。
+
+基本的には、`c`（continue）コマンドが入力されたことをフックして`simplest-pal`に制御を戻したいところです。ただし、実際には`c`が押されてもデバッガ画面を表示し続けるだけで何もせず、`pal.do()`や`pal.consult_human()`から返された文字列が出力に現れた場合（さらに入力可能になったことを確認した後）にのみ、`c`などのコマンドを送信するという実装になっています。
+
+デバッガセッションの完全なログを保存する機能も備えています。
+
+## 特徴
+
+  * **AIラップデバッガ**: PDBの上にシンプルな自動化レイヤーを提供し、AIエージェントがデバッグプロセスと対話できるようにします。
+
+  * **コンセプト実装**: AI駆動デバッグの基本的なワークフローを示すための概念実証です。
+
+  * **JRF-2018/jrf\_pdb\_agent\_libとの連携**: `jrf_pdb_agent_lib`と連携して動作するように設計されていますが、他の`pdb_agent_lib`の実装にも対応可能です。
+
+  * **ログ保存**: デバッガの入出力を含むセッション全体のログを保存します。
+
+  * **CLIインターフェース**: Pythonで実装されたシンプルなコマンドラインインターフェースを提供します。
+
+  * **セキュリティの考慮なし**: これはコンセプト実装であるため、セキュリティは考慮されていません。
+
+## インストール
+
+このプロジェクトは、レポジトリからインストールできます。
+
+```bash
+pip install git+https://github.com/JRF-2018/simplest-pal
+```
+
+## 使い方
+
+`simplest-pal`は、デバッグしたいPythonスクリプトを指定して実行します。
+
+```bash
+simplest-pal your_script.py [script_args...]
+```
+
+  * `your_script.py`: デバッグしたいPythonスクリプトのパス。
+
+  * `[script_args...]`: `your_script.py`に渡す引数。
+
+### PDBログファイルの指定
+
+デバッガセッションのログファイルを指定するには、`--pal-log`オプションを使用します。
+
+```bash
+simplest-pal --pal-log my_debug_session.log your_script.py
+```
+
+デフォルトのログファイルは`pdb_session.log`です。
+
+### デバッガ停止時の自動終了
+
+`c` (continue) できずにデバッガに止まるとき、必ず`q` (quit)するには、`--pal-quit-on-stop`オプションを使用します。
+
+## 動作原理
+
+`simplest-pal`は、`sys.stdin`、`sys.stdout`、`sys.stderr`をフックしてPDBの入出力をインターセプトします。
+
+1.  **PDBセッションの開始**: 対象のスクリプトが`pdb.set_trace()`を呼び出すと、`simplest-pal`が制御を奪い、PDBセッションを開始します。
+
+2.  **出力の監視**: PDBからの出力を監視し、AIとの対話ポイント（例: "`AI Interaction Point`"、"`Current Code Context (for AI reference)`"）や人間による介入リクエスト（例: "`Human Consultation Requested`"）などの特定のキーワードを検出します。
+
+3.  **自動継続**: これらのキーワードが検出された場合、`simplest-pal`は自動的にPDBに`c`（continue）コマンドを送信し、スクリプトの実行を継続させます。
+
+4.  **人間による介入**: PDBがユーザー入力を待っている状態（`(Pdb)`プロンプトが表示された場合）で、自動継続の条件が満たされない場合は、人間が直接PDBコマンドを入力できるようになります。
+
+5.  **ログ記録**: すべてのPDBの入出力は指定されたログファイルに記録されます。
+
+## 使用例
+
+次のようなファイルを example_1.py と名付け simplest-pal から実行します。
+
+```python
+import jrf_pdb_agent_lib as pal
+import textwrap
+
+pal.login()
+
+x = 42
+
+r = pal.do("Do something good.",
+           current_code = textwrap.dedent("""\
+               pal.do('Multiply 2',current_code='x=x*2')
+               pal.do('Minus 1',current_code='x=x-1')
+               pal.RESULT = x
+           """))
+
+print(r)
+```
+
+次のような出力になります。
+
+```bash
+$ simplest-pal example_1.py
+Simplest P.A.L.: Running target script: 'example_1.py'
+PDB Automation: Debugger session activated.
+PDB Agent Lib: Initialized. Shared memory is used for IPC.
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Do something good.'
+Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+PDB Automation: Debugger session activated.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Multiply 2'
+Current Code Context (for AI reference): 'x=x*2'
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+PDB Automation: Debugger session activated.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: 'x=x*2'
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: No result returned from AI.
+
+--- PDB Agent Lib: AI Interaction Point ---
+Order for AI: 'Minus 1'
+Current Code Context (for AI reference): 'x=x-1'
+AI should interact directly via PDB commands or shared memory.
+--- PDB Agent Lib: Entering Debugger ---
+--Call--
+> /some/where/simplest_pal.py(120)exit_debugger_hook()
+-> def exit_debugger_hook(self):
+(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+PDB Automation: Debugger session deactivated.
+Simplest P.A.L.: Target script execution completed normally.
+--- PDB Agent Lib: Exiting Debugger ---
+PDB Agent Lib: Executing code from AI: 'x=x-1'
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: No result returned from AI.
+PDB Agent Lib: AI-provided code execution successful.
+--- PDB Agent Lib: Exiting AI Interaction ---
+PDB Agent Lib: Returning result from AI.
+83
+
+PDB session log saved to 'pdb_session.log'.
+```
+
+三度、自動的に `c` が押されたことになります。
+
+## 開発
+
+このプロジェクトはコンセプト実装であるため、バグ報告や機能提案は大歓迎です。
+
+## ライセンス
+
+このプロジェクトは MIT ライセンスの下でライセンスされています。詳細は LICENSE ファイルを参照してください。
+
+
+## 著者
+
+JRF ( http://jrf.cocolog-nifty.com/statuses , Twitter (X): @jion_rockford )
+
+このプロジェクトは、大部分が Gemini 2.5 Flash と Pro によって生成されました。
+
+
+
+----
+(This document is mainly written in Japanese/UTF8.)
