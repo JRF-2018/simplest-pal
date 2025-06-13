@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.1' # Time-stamp: <2025-06-13T08:38:02Z>
+__version__ = '0.0.2' # Time-stamp: <2025-06-13T08:44:04Z>
 
 import sys
 import threading
