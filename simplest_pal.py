@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.4' # Time-stamp: <2025-06-14T07:09:02Z>
+__version__ = '0.0.5' # Time-stamp: <2025-06-14T07:55:07Z>
 
 # It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
 # This initial block ensures that .apy files can be imported by runpy.
@@ -207,9 +207,11 @@ def simplest_pal_main():
         Ensures the `PdbAutomation` instance is notified when PDB activates/deactivates.
         """
         pdb_auto.enter_debugger_hook()
-        # Set trace in the frame two levels up, which is typically the user's code,
-        # to ensure PDB starts outside of simplest_pal's internal calls.
-        pal_debugger.set_trace(sys._getframe(2) if frame is None else frame)
+        # Use the provided 'frame' directly, as it's the intended breakpoint location.
+        # This is typically the user's code or the point in jrf_pdb_agent_lib.py
+        # where pdb.set_trace() was originally called. The PdbAutomation.readline
+        # method will handle stepping up if PDB still lands in an internal frame.
+        pal_debugger.set_trace(frame) 
         pdb_auto.exit_debugger_hook()
     
     # Override the standard pdb.set_trace with our custom hooked version

@@ -114,10 +114,9 @@ Order for AI: 'Do something good.'
 Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
@@ -128,10 +127,9 @@ Order for AI: 'Multiply 2'
 Current Code Context (for AI reference): 'x=x*2'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
@@ -145,10 +143,9 @@ Order for AI: 'Minus 1'
 Current Code Context (for AI reference): 'x=x-1'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 Simplest P.A.L.: Target script execution completed normally.
 --- PDB Agent Lib: Exiting Debugger ---
@@ -299,10 +296,9 @@ Order for AI: 'Do something good.'
 Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
@@ -313,10 +309,9 @@ Order for AI: 'Multiply 2'
 Current Code Context (for AI reference): 'x=x*2'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
@@ -330,10 +325,9 @@ Order for AI: 'Minus 1'
 Current Code Context (for AI reference): 'x=x-1'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
---Call--
-> /some/where/simplest_pal.py(120)exit_debugger_hook()
--> def exit_debugger_hook(self):
-(Pdb) PDB Automation (readline): Auto-continuing (AI Interaction with context).
+> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+-> pdb_auto.exit_debugger_hook()
+(Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
 Simplest P.A.L.: Target script execution completed normally.
 --- PDB Agent Lib: Exiting Debugger ---
