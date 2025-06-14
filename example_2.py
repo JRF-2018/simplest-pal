@@ -1,13 +1,14 @@
 #!/usr/bin/python3
-__version__ = '0.0.1' # Time-stamp: <2025-06-12T19:44:52Z>
+__version__ = '0.0.3' # Time-stamp: <2025-06-14T02:35:41Z>
 
 import jrf_pdb_agent_lib as pal
-import textwrap
+from textwrap import dedent as d_py
+from textwrap import dedent as d_md
 
 pal.login()
 
 x = 42
 
-r = pal.do("Do something good.")
+r = pal.do(d_md("Do something good."))
 
 print(r)

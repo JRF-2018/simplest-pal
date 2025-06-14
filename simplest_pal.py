@@ -1,5 +1,10 @@
 # simplest_pal.py
-__version__ = '0.0.2' # Time-stamp: <2025-06-13T08:44:04Z>
+__version__ = '0.0.3' # Time-stamp: <2025-06-14T02:30:13Z>
+
+# It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
+import importlib.machinery
+if '.apy' not in importlib.machinery.SOURCE_SUFFIXES:
+    importlib.machinery.SOURCE_SUFFIXES.append('.apy')
 
 import sys
 import threading
