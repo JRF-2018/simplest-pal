@@ -1,7 +1,8 @@
 # simplest_pal.py
-__version__ = '0.0.3' # Time-stamp: <2025-06-14T02:30:13Z>
+__version__ = '0.0.4' # Time-stamp: <2025-06-14T07:09:02Z>
 
 # It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
+# This initial block ensures that .apy files can be imported by runpy.
 import importlib.machinery
 if '.apy' not in importlib.machinery.SOURCE_SUFFIXES:
     importlib.machinery.SOURCE_SUFFIXES.append('.apy')
@@ -23,8 +24,8 @@ IO_POLL_INTERVAL = 0.01
 class PdbAutomation:
     """
     Handles PDB automation by hooking sys.stdin/stdout/stderr.
-    This implementation uses the original script's stable execution model
-    while replacing the threaded input reader with a direct, thread-less
+    This implementation utilizes the original script's stable execution model
+    while replacing the threaded input reader with a direct, non-threaded
     approach for improved Ctrl-C stability.
     """
     def __init__(self, original_stdin, original_stdout, original_stderr, log_file, quit_on_stop):
@@ -34,55 +35,60 @@ class PdbAutomation:
         self.log_file = log_file
         self.quit_on_stop = quit_on_stop
         self.output_buffer = io.StringIO()
-        self.is_debugging = threading.Event() # Event to indicate if the debugger is active
+        self.is_debugging = threading.Event() # Event to indicate if the debugger is currently active
 
-        sys.stdout = self # Hook standard output
-        sys.stderr = self # Hook standard error output
-        # Create a new log file and record the session start time
+        sys.stdout = self # Hook standard output for PDB interaction and logging
+        sys.stderr = self # Hook standard error output for PDB interaction and logging
+        
+        # Open the log file in write mode to start a new session log
         with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write(f"--- PDB Session Log Started: {time.ctime()} ---\n")
 
     def _log_to_file(self, s):
         """
-        Appends a string to the log file.
+        Appends a string to the dedicated log file.
         """
         try:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write(s)
         except Exception as e:
-            self.original_stdout.write(f"PDB Automation: File logging error: {e}\n")
+            # Fallback to original stdout if logging fails
+            self.original_stdout.write(f"PDB Automation: Error writing to log file: {e}\n")
 
     def _print_to_console(self, s):
         """
-        Writes a string directly to the original standard output.
+        Writes a string directly to the original standard output (console).
         """
         self.original_stdout.write(s)
         self.original_stdout.flush()
 
     def write(self, s):
         """
-        Overrides sys.stdout/stderr's write method to write to the output buffer and log file.
+        Overrides sys.stdout/stderr's write method.
+        Writes to an internal buffer and the log file.
         """
         self.output_buffer.write(s)
         self._log_to_file(s)
 
     def flush(self):
         """
-        Overrides sys.stdout/stderr's flush method to flush the original streams.
+        Overrides sys.stdout/stderr's flush method.
+        Flushes the original standard output and error streams.
         """
         self.original_stdout.flush()
         self.original_stderr.flush()
 
     def readline(self):
         """
-        Processes output from PDB, determines automatic commands, or waits for user input.
+        Processes output from PDB, determines whether to send an automatic command
+        (continue, quit, step up), or waits for manual user input.
         """
-        # Get all buffered output and clear the buffer
+        # Retrieve all buffered output and clear the buffer for the next cycle
         current_buffered_output = self.output_buffer.getvalue()
         self.output_buffer.truncate(0)
         self.output_buffer.seek(0)
 
-        # Display the captured output to the console
+        # Display the captured PDB output to the console
         self._print_to_console(current_buffered_output)
 
         # --- PDB Automation Logic ---
@@ -91,62 +97,59 @@ class PdbAutomation:
         human_consultation_present = "Human Consultation Requested" in current_buffered_output
         pdb_prompt_present = '(Pdb)' in current_buffered_output
 
-        # Auto 'c' (continue) logic when AI interaction point is detected
+        # Automatically continue ('c') if an AI interaction point with context is detected
         if ai_interaction_point_present and current_code_context_present:
             log_msg = "PDB Automation (readline): Auto-continuing (AI interaction context detected).\n"
             self._log_to_file(log_msg)
             self._print_to_console(log_msg)
             return "c\n"
 
-        # Auto 'q' (quit) logic when PDB prompt is present and quit_on_stop is enabled
+        # Automatically quit ('q') if the PDB prompt is present and auto-quit-on-stop is enabled
         if pdb_prompt_present and self.quit_on_stop:
-            log_msg = "PDB Automation (readline): Auto-quitting as 'quit_on_stop' is enabled.\n"
+            log_msg = "PDB Automation (readline): Auto-quitting as '--pal-quit-on-stop' is enabled.\n"
             self._log_to_file(log_msg)
             self._print_to_console(log_msg)
             return "q\n"
 
-        # Auto 'u' (up a frame) logic for internal frames
-        is_internal_frame = False
+        # Logic to automatically move up from internal PDB frames
+        is_in_simplest_pal_frame = False
         if pdb_prompt_present:
-            # Check if the current output contains a frame within simplest_pal.py
+            # Check if the current PDB frame points to a file within simplest_pal.py
             for line in current_buffered_output.splitlines():
+                # PDB output typically shows the current line with a '>' prefix
                 if line.strip().startswith('>') and os.path.basename(__file__) in line:
-                    is_internal_frame = True
+                    is_in_simplest_pal_frame = True
                     break
         
-        # If in an internal frame without AI interaction context, send 'u 2' to move further up
-        if is_internal_frame and (ai_interaction_point_present or human_consultation_present) and not current_code_context_present:
-            log_msg = "PDB Automation (readline): In internal frame without context. Auto-sending 'u 2'.\n"
-            self._log_to_file(log_msg)
-            self._print_to_console(log_msg)
-            return "u 2\n"
-        # If in an internal frame and neither AI interaction nor human consultation is requested, send 'u'
-        elif is_internal_frame and not ai_interaction_point_present and not human_consultation_present:
-            log_msg = "PDB Automation (readline): Detected unexpected internal frame. Auto-sending 'u'.\n"
+        # If PDB is in an internal simplest_pal.py frame, automatically send 'u' to move up
+        if is_in_simplest_pal_frame:
+            log_msg = "PDB Automation (readline): In internal PDB frame. Auto-sending 'u'.\n"
             self._log_to_file(log_msg)
             self._print_to_console(log_msg)
             return "u\n" # Move up one frame
 
-        # --- Manual Input Logic ---
-        # If PDB is showing a prompt, wait for manual user input
+        # --- Manual User Input Logic ---
+        # If PDB is displaying a prompt and no automation condition is met, wait for user input
         if pdb_prompt_present:
             log_msg = "PDB Automation (readline): Waiting for manual user input.\n"
             self._log_to_file(log_msg)
-            # Read directly from original stdin (blocking read, Ctrl-C safe)
+            # Read command directly from original stdin (blocking read, robust against Ctrl-C)
             user_command = self.original_stdin.readline()
             if not user_command:
-                # If EOF, send quit command
-                self._log_to_file("PDB Automation (readline): EOF detected, sending 'q'.\n")
+                # If EOF (e.g., input stream closed), send a quit command to PDB
+                self._log_to_file("PDB Automation (readline): EOF detected on stdin, sending 'q'.\n")
                 return "q\n"
-            self._log_to_file(f"PDB Automation (readline): User input: {repr(user_command.strip())}\n")
+            self._log_to_file(f"PDB Automation (readline): User input received: {repr(user_command.strip())}\n")
             return user_command
         
-        # If no PDB prompt, return empty string (should not typically be reached)
+        # If no PDB prompt, return an empty string. This path should ideally not be reached
+        # if PDB is consistently interacting.
         return "" 
 
     def enter_debugger_hook(self):
         """
-        Called when a debugger session becomes active.
+        Hook called when a PDB debugger session becomes active.
+        Sets the internal flag `is_debugging`.
         """
         self.is_debugging.set()
         self._log_to_file("PDB Automation: Debugger session activated.\n")
@@ -154,7 +157,8 @@ class PdbAutomation:
 
     def exit_debugger_hook(self):
         """
-        Called when a debugger session becomes inactive.
+        Hook called when a PDB debugger session becomes inactive.
+        Clears the internal flag `is_debugging`.
         """
         self.is_debugging.clear()
         self._log_to_file("PDB Automation: Debugger session deactivated.\n")
@@ -162,7 +166,7 @@ class PdbAutomation:
 
     def get_output(self):
         """
-        Retrieves buffered output and clears the buffer.
+        Retrieves all accumulated buffered output and then clears the buffer.
         """
         output = self.output_buffer.getvalue()
         self.output_buffer.truncate(0)
@@ -171,7 +175,8 @@ class PdbAutomation:
 
     def restore_io(self):
         """
-        Restores the original standard I/O streams and displays a message about the log file.
+        Restores the original `sys.stdin`, `sys.stdout`, and `sys.stderr` streams.
+        Also prints a confirmation message about the log file.
         """
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
@@ -180,73 +185,80 @@ class PdbAutomation:
 def simplest_pal_main():
     """
     Main function for Simplest P.A.L. (PDB Automation Layer).
-    Runs the specified Python script under the PDB debugger, providing
-    automation and interaction capabilities.
+    This function parses command-line arguments, sets up the PDB automation
+    system, and runs the target Python script under PDB.
     """
-    parser = argparse.ArgumentParser(description="PDB debugger automation layer for AI integration.")
-    parser.add_argument("script", help="Path to the Python script to run.")
-    parser.add_argument("--pal-log", default=DEFAULT_LOG_FILE, help=f"PDB session log file (default: {DEFAULT_LOG_FILE})")
-    parser.add_argument("--pal-quit-on-stop", default=False, action='store_true', help="Automatically quits the debugger when it stops.")
+    parser = argparse.ArgumentParser(description="A PDB debugger automation layer designed for AI integration.")
+    parser.add_argument("script", help="Path to the Python script to be run and debugged.")
+    parser.add_argument("--pal-log", default=DEFAULT_LOG_FILE, help=f"Specifies the PDB session log file (default: {DEFAULT_LOG_FILE})")
+    parser.add_argument("--pal-quit-on-stop", default=False, action='store_true', 
+                        help="Automatically quits the debugger if it stops without an explicit 'continue' or user input.")
     args, remaining_args = parser.parse_known_args()
 
     original_stdin, original_stdout, original_stderr = sys.stdin, sys.stdout, sys.stderr
     pdb_auto = PdbAutomation(original_stdin, original_stdout, original_stderr, args.pal_log, args.pal_quit_on_stop)
 
+    # Initialize PDB instance with the custom I/O handler
     pal_debugger = pdb.Pdb(stdin=pdb_auto, stdout=pdb_auto)
 
     def set_trace_with_hooks(frame=None):
         """
-        Overrides pdb.set_trace and calls debugger hooks.
+        Custom `pdb.set_trace` function that includes hooks for `PdbAutomation`.
+        Ensures the `PdbAutomation` instance is notified when PDB activates/deactivates.
         """
         pdb_auto.enter_debugger_hook()
-        # Use frame from 2 levels up, as in the original script, for correct context
+        # Set trace in the frame two levels up, which is typically the user's code,
+        # to ensure PDB starts outside of simplest_pal's internal calls.
         pal_debugger.set_trace(sys._getframe(2) if frame is None else frame)
         pdb_auto.exit_debugger_hook()
     
-    # Replace standard pdb.set_trace with the custom hook
+    # Override the standard pdb.set_trace with our custom hooked version
     pdb.set_trace = set_trace_with_hooks
 
     pdb_auto._print_to_console(f"Simplest P.A.L.: Running target script: '{args.script}'\n")
     sys.argv = [args.script] + remaining_args
     
-    # Add the directory of the target script to sys.path
+    # Add the directory of the target script to sys.path to resolve local imports (e.g., jrf_pdb_agent_lib.py)
     script_dir = os.path.dirname(os.path.abspath(args.script))
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir) # Insert at the beginning to prioritize local modules
 
     script_completed = False
-    script_force_quit = False # Set to True if script is explicitly quit
+    script_force_quit = False # Flag to indicate if the script was explicitly quit (e.g., via bdb.BdbQuit)
     try:
-        # Loop to manage script execution
+        # Main loop to repeatedly run the target script until completion or explicit quit
         while not script_completed:
             try:
                 runpy.run_path(args.script, run_name="__main__")
-                script_completed = True
+                script_completed = True # Script finished without PDB stopping it
                 pdb_auto._print_to_console("Simplest P.A.L.: Target script execution completed normally.\n")
             except bdb.BdbQuit:
-                # If PDB session is explicitly quit
+                # This exception is raised when 'q' is entered in PDB, indicating an explicit quit
                 script_completed = True
                 script_force_quit = True
                 pdb_auto._print_to_console("Simplest P.A.L.: PDB session explicitly quit.\n")
             except Exception as e:
-                # If any other exception occurs
+                # Catch any other exceptions from the target script
                 pdb_auto._print_to_console(f"Simplest P.A.L.: An exception occurred: {e}\n")
-                traceback.print_exc(file=pdb_auto) # Print stack trace to log
-                # If PDB is not active after an exception, the script has crashed
+                traceback.print_exc(file=pdb_auto) # Print full stack trace to the log file
+                
+                # If PDB is not active after the exception, it means the script crashed outside PDB control
                 if not pdb_auto.is_debugging.is_set():
                     pdb_auto._print_to_console("Simplest P.A.L.: Unhandled exception in target script, stopping.\n")
                     script_completed = True
                 else:
+                    # If PDB is active, the exception was caught within a PDB session
                     pdb_auto._print_to_console("Simplest P.A.L.: Exception caught by PDB. Manual intervention may be required.\n")
             
-            # If PDB is still active and not explicitly quit, retry script execution (handles 'c' from nested PDB sessions)
+            # If the debugger is still active (e.g., due to 'c' in a nested session)
+            # and not explicitly quit, then the script is not truly "completed" from P.A.L.'s perspective.
             if pdb_auto.is_debugging.is_set() and not script_force_quit:
-                script_completed = False # Continue loop if debugger is still active
+                script_completed = False # Loop again to re-enter PDB or continue script
 
-            time.sleep(IO_POLL_INTERVAL)
+            time.sleep(IO_POLL_INTERVAL) # Small delay to prevent busy-waiting
 
     finally:
-        # Cleanup: Deactivate debugger if active, display any remaining buffered output, and restore I/O
+        # Final cleanup: Ensure debugger is deactivated, flush any remaining output, and restore original I/O
         if pdb_auto.is_debugging.is_set():
             pdb_auto.exit_debugger_hook()
         remaining_output = pdb_auto.get_output()
