@@ -114,7 +114,6 @@ The output will be as follows.
 ```bash
 $ simplest-pal example_1.py
 Simplest P.A.L.: Running target script: 'example_1.py'
-PDB Automation: Debugger session activated.
 PDB Agent Lib: Initialized. Shared memory is used for IPC.
 
 --- PDB Agent Lib: AI Interaction Point ---
@@ -122,11 +121,11 @@ Order for AI: 'Do something good.'
 Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 
@@ -135,11 +134,11 @@ Order for AI: 'Multiply 2'
 Current Code Context (for AI reference): 'x=x*2'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: 'x=x*2'
 PDB Agent Lib: AI-provided code execution successful.
@@ -151,11 +150,11 @@ Order for AI: 'Minus 1'
 Current Code Context (for AI reference): 'x=x-1'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-Simplest P.A.L.: Target script execution completed normally.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: 'x=x-1'
 PDB Agent Lib: AI-provided code execution successful.
@@ -165,6 +164,7 @@ PDB Agent Lib: AI-provided code execution successful.
 --- PDB Agent Lib: Exiting AI Interaction ---
 PDB Agent Lib: Returning result from AI.
 83
+Simplest P.A.L.: Target script execution completed normally.
 
 PDB session log saved to 'pdb_session.log'.
 ```
@@ -304,7 +304,6 @@ print(r)
 ```bash
 $ simplest-pal example_1.py
 Simplest P.A.L.: Running target script: 'example_1.py'
-PDB Automation: Debugger session activated.
 PDB Agent Lib: Initialized. Shared memory is used for IPC.
 
 --- PDB Agent Lib: AI Interaction Point ---
@@ -312,11 +311,11 @@ Order for AI: 'Do something good.'
 Current Code Context (for AI reference): "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: "pal.do('Multiply 2',current_code='x=x*2')\npal.do('Minus 1',current_code='x=x-1')\npal.RESULT = x\n"
 
@@ -325,11 +324,11 @@ Order for AI: 'Multiply 2'
 Current Code Context (for AI reference): 'x=x*2'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-PDB Automation: Debugger session activated.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: 'x=x*2'
 PDB Agent Lib: AI-provided code execution successful.
@@ -341,11 +340,11 @@ Order for AI: 'Minus 1'
 Current Code Context (for AI reference): 'x=x-1'
 AI should interact directly via PDB commands or shared memory.
 --- PDB Agent Lib: Entering Debugger ---
-> /some/where/simplest_pal.py(215)set_trace_with_hooks()
+PDB Automation: Debugger session activated.
+> /some/where/simplest_pal.py(204)set_trace_with_hooks()
 -> pdb_auto.exit_debugger_hook()
 (Pdb) PDB Automation (readline): Auto-continuing (AI interaction context detected).
 PDB Automation: Debugger session deactivated.
-Simplest P.A.L.: Target script execution completed normally.
 --- PDB Agent Lib: Exiting Debugger ---
 PDB Agent Lib: Executing code from AI: 'x=x-1'
 PDB Agent Lib: AI-provided code execution successful.
@@ -355,6 +354,7 @@ PDB Agent Lib: AI-provided code execution successful.
 --- PDB Agent Lib: Exiting AI Interaction ---
 PDB Agent Lib: Returning result from AI.
 83
+Simplest P.A.L.: Target script execution completed normally.
 
 PDB session log saved to 'pdb_session.log'.
 ```

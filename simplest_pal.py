@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.5' # Time-stamp: <2025-06-14T07:55:07Z>
+__version__ = '0.0.6' # Time-stamp: <2025-06-15T05:42:55Z>
 
 # It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
 # This initial block ensures that .apy files can be imported by runpy.
@@ -65,10 +65,11 @@ class PdbAutomation:
     def write(self, s):
         """
         Overrides sys.stdout/stderr's write method.
-        Writes to an internal buffer and the log file.
+        Writes to an internal buffer, the log file, and immediately to the console.
         """
         self.output_buffer.write(s)
         self._log_to_file(s)
+        self._print_to_console(s)
 
     def flush(self):
         """
@@ -87,9 +88,6 @@ class PdbAutomation:
         current_buffered_output = self.output_buffer.getvalue()
         self.output_buffer.truncate(0)
         self.output_buffer.seek(0)
-
-        # Display the captured PDB output to the console
-        self._print_to_console(current_buffered_output)
 
         # --- PDB Automation Logic ---
         ai_interaction_point_present = "AI Interaction Point" in current_buffered_output
@@ -163,15 +161,6 @@ class PdbAutomation:
         self.is_debugging.clear()
         self._log_to_file("PDB Automation: Debugger session deactivated.\n")
         self._print_to_console("PDB Automation: Debugger session deactivated.\n")
-
-    def get_output(self):
-        """
-        Retrieves all accumulated buffered output and then clears the buffer.
-        """
-        output = self.output_buffer.getvalue()
-        self.output_buffer.truncate(0)
-        self.output_buffer.seek(0)
-        return output
 
     def restore_io(self):
         """
@@ -260,12 +249,9 @@ def simplest_pal_main():
             time.sleep(IO_POLL_INTERVAL) # Small delay to prevent busy-waiting
 
     finally:
-        # Final cleanup: Ensure debugger is deactivated, flush any remaining output, and restore original I/O
+        # Final cleanup: Ensure debugger is deactivated and restore original I/O
         if pdb_auto.is_debugging.is_set():
             pdb_auto.exit_debugger_hook()
-        remaining_output = pdb_auto.get_output()
-        if remaining_output:
-            pdb_auto._print_to_console(remaining_output)
         pdb_auto.restore_io()
 
 if __name__ == "__main__":
