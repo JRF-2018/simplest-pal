@@ -171,10 +171,6 @@ PDB session log saved to 'pdb_session.log'.
 
 This means that `c` was automatically pressed three times.
 
-## Development
-
-As this project is a concept implementation, bug reports and feature suggestions are highly welcome.
-
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
@@ -360,10 +356,6 @@ PDB session log saved to 'pdb_session.log'.
 ```
 
 三度、自動的に `c` が押されたことになります。
-
-## 開発
-
-このプロジェクトはコンセプト実装であるため、バグ報告や機能提案は大歓迎です。
 
 ## ライセンス
 
