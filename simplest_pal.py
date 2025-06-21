@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.6' # Time-stamp: <2025-06-15T05:42:55Z>
+__version__ = '0.0.7' # Time-stamp: <2025-06-21T21:15:33Z>
 
 # It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
 # This initial block ensures that .apy files can be imported by runpy.
@@ -19,7 +19,6 @@ import bdb
 import traceback
 
 DEFAULT_LOG_FILE = "pdb_session.log"
-IO_POLL_INTERVAL = 0.01
 
 class PdbAutomation:
     """
@@ -214,40 +213,18 @@ def simplest_pal_main():
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir) # Insert at the beginning to prioritize local modules
 
-    script_completed = False
-    script_force_quit = False # Flag to indicate if the script was explicitly quit (e.g., via bdb.BdbQuit)
     try:
-        # Main loop to repeatedly run the target script until completion or explicit quit
-        while not script_completed:
-            try:
-                runpy.run_path(args.script, run_name="__main__")
-                script_completed = True # Script finished without PDB stopping it
-                pdb_auto._print_to_console("Simplest P.A.L.: Target script execution completed normally.\n")
-            except bdb.BdbQuit:
-                # This exception is raised when 'q' is entered in PDB, indicating an explicit quit
-                script_completed = True
-                script_force_quit = True
-                pdb_auto._print_to_console("Simplest P.A.L.: PDB session explicitly quit.\n")
-            except Exception as e:
-                # Catch any other exceptions from the target script
-                pdb_auto._print_to_console(f"Simplest P.A.L.: An exception occurred: {e}\n")
-                traceback.print_exc(file=pdb_auto) # Print full stack trace to the log file
-                
-                # If PDB is not active after the exception, it means the script crashed outside PDB control
-                if not pdb_auto.is_debugging.is_set():
-                    pdb_auto._print_to_console("Simplest P.A.L.: Unhandled exception in target script, stopping.\n")
-                    script_completed = True
-                else:
-                    # If PDB is active, the exception was caught within a PDB session
-                    pdb_auto._print_to_console("Simplest P.A.L.: Exception caught by PDB. Manual intervention may be required.\n")
-            
-            # If the debugger is still active (e.g., due to 'c' in a nested session)
-            # and not explicitly quit, then the script is not truly "completed" from P.A.L.'s perspective.
-            if pdb_auto.is_debugging.is_set() and not script_force_quit:
-                script_completed = False # Loop again to re-enter PDB or continue script
-
-            time.sleep(IO_POLL_INTERVAL) # Small delay to prevent busy-waiting
-
+        # Run the target script once.
+        runpy.run_path(args.script, run_name="__main__")
+        pdb_auto._print_to_console("Simplest P.A.L.: Target script execution completed normally.\n")
+    except bdb.BdbQuit:
+        # This exception is raised when 'q' is entered in PDB, indicating an explicit quit
+        pdb_auto._print_to_console("Simplest P.A.L.: PDB session explicitly quit.\n")
+    except Exception as e:
+        # Catch any other exceptions from the target script
+        pdb_auto._print_to_console(f"Simplest P.A.L.: An unhandled exception occurred: {e}\n")
+        # Print full stack trace to the log file and console
+        traceback.print_exc(file=pdb_auto)
     finally:
         # Final cleanup: Ensure debugger is deactivated and restore original I/O
         if pdb_auto.is_debugging.is_set():
