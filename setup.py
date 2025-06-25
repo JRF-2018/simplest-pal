@@ -2,7 +2,7 @@
 import setuptools
 import os
 
-VERSION = "0.0.7"
+VERSION = "0.1.0"
 
 here = os.path.abspath(os.path.dirname(__file__))
 readme_path = os.path.join(here, 'README.md')

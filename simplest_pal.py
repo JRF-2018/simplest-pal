@@ -1,5 +1,5 @@
 # simplest_pal.py
-__version__ = '0.0.7' # Time-stamp: <2025-06-21T21:15:33Z>
+__version__ = '0.1.0' # Time-stamp: <2025-06-25T15:43:07Z>
 
 # It seems to work now, though it didn't before. It appears the key was to append .apy to importlib.machinery.SOURCE_SUFFIXES before runpy is imported/used.
 # This initial block ensures that .apy files can be imported by runpy.
